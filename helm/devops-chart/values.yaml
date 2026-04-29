@@ -1,0 +1,19 @@
+replicaCount: 1
+
+image:
+  repository: devops-autoops-app
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 3000
+
+containerPort: 3000
+
+probes:
+  path: /health
+  readinessInitialDelaySeconds: 5
+  readinessPeriodSeconds: 10
+  livenessInitialDelaySeconds: 15
+  livenessPeriodSeconds: 20

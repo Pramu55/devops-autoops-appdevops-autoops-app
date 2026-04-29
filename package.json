@@ -1,0 +1,13 @@
+{
+  "name": "devops-autoops-app",
+  "version": "1.0.0",
+  "description": "DevOps AutoOps App with Docker, Jenkins, Kubernetes, and Helm",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
