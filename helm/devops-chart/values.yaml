@@ -1,9 +1,9 @@
 replicaCount: 1
 
 image:
-  repository: devops-autoops-app
-  tag: local
-  pullPolicy: IfNotPresent
+  repository: pramu55/devops-app
+  tag: v1
+  pullPolicy: Always
 
 service:
   type: NodePort
