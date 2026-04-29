@@ -7,3 +7,5 @@ kubeconfig
 jenkins_home/
 dist/
 coverage/
+
+jenkins/jenkins-kube/
