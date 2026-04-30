@@ -4,7 +4,9 @@
   "description": "DevOps AutoOps App with Docker, Jenkins, Kubernetes, and Helm",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "test": "node test/app.test.js",
+    "smoke": "node scripts/smoke-test.js"
   },
   "license": "MIT",
   "dependencies": {

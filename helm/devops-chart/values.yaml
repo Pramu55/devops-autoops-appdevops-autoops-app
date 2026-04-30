@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: pramu55/devops-app
@@ -8,12 +8,56 @@ image:
 service:
   type: NodePort
   port: 3000
+  targetPort: http
 
 containerPort: 3000
 
+config:
+  serviceName: devops-autoops-platform
+  nodeEnv: production
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /metrics
+  prometheus.io/port: "3000"
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
 probes:
-  path: /health
+  readinessPath: /ready
+  livenessPath: /health
   readinessInitialDelaySeconds: 5
   readinessPeriodSeconds: 10
   livenessInitialDelaySeconds: 15
   livenessPeriodSeconds: 20
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: false

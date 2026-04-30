@@ -2,8 +2,14 @@ node_modules
 npm-debug.log
 .git
 .gitignore
-Dockerfile
-README.md
+coverage
+.env
+.kube
+jenkins/jenkins-kube
+test
+scripts
+docs
+monitoring
 jenkins
 k8s
 helm

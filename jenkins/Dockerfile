@@ -5,7 +5,7 @@ USER root
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl gnupg lsb-release \
+  && apt-get install -y --no-install-recommends ca-certificates curl gnupg lsb-release nodejs npm \
   && install -m 0755 -d /etc/apt/keyrings \
   && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
   && chmod a+r /etc/apt/keyrings/docker.gpg \
@@ -17,6 +17,7 @@ RUN apt-get update \
   && curl -fsSL "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl \
   && chmod +x /usr/local/bin/kubectl \
   && curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash \
+  && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin \
   && jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*

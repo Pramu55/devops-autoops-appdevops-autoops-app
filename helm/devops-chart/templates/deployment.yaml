@@ -1,37 +1,64 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-devops-chart
+  name: {{ include "devops-chart.fullname" . }}
   labels:
-    app: devops-app
-    release: {{ .Release.Name }}
+    {{- include "devops-chart.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
-      app: devops-app
-      release: {{ .Release.Name }}
+      {{- include "devops-chart.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: devops-app
-        release: {{ .Release.Name }}
+        {{- include "devops-chart.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
     spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: devops-app
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        - name: {{ include "devops-chart.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 3000
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "{{ .Values.containerPort }}"
+            - name: SERVICE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "devops-chart.fullname" . }}-config
+                  key: SERVICE_NAME
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "devops-chart.fullname" . }}-config
+                  key: NODE_ENV
+            - name: APP_VERSION
+              value: "{{ .Values.image.tag }}"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.probes.path }}
-              port: 3000
+              path: {{ .Values.probes.readinessPath }}
+              port: http
             initialDelaySeconds: {{ .Values.probes.readinessInitialDelaySeconds }}
             periodSeconds: {{ .Values.probes.readinessPeriodSeconds }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.probes.path }}
-              port: 3000
+              path: {{ .Values.probes.livenessPath }}
+              port: http
             initialDelaySeconds: {{ .Values.probes.livenessInitialDelaySeconds }}
             periodSeconds: {{ .Values.probes.livenessPeriodSeconds }}
