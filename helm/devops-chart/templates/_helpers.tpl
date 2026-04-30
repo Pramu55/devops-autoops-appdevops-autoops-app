@@ -12,6 +12,8 @@
 
 {{- define "devops-chart.labels" -}}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+app: devops-app
+release: {{ .Release.Name }}
 app.kubernetes.io/name: {{ include "devops-chart.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
@@ -19,6 +21,6 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
 {{- define "devops-chart.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "devops-chart.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+app: devops-app
+release: {{ .Release.Name }}
 {{- end -}}

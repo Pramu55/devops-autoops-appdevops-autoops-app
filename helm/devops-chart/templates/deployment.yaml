@@ -17,7 +17,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "devops-chart.selectorLabels" . | nindent 8 }}
+        {{- include "devops-chart.labels" . | nindent 8 }}
       annotations:
         {{- toYaml .Values.podAnnotations | nindent 8 }}
     spec:
