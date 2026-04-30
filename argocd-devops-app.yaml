@@ -11,12 +11,10 @@ spec:
     path: helm/devops-chart
     helm:
       releaseName: devops-release
-      parameters:
-        - name: image.repository
-          value: pramu55/devops-app
-        - name: image.tag
-          value: "11"
   destination:
     server: https://kubernetes.default.svc
     namespace: default
-  syncPolicy: {}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

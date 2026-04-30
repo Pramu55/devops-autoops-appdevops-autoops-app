@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: pramu55/devops-app
-  tag: v1
+  tag: "11"
   pullPolicy: Always
 
 service:
