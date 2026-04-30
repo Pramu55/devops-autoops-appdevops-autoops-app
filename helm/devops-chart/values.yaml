@@ -72,3 +72,10 @@ serviceMonitor:
   enabled: true
   path: /metrics
   interval: 15s
+
+ingress:
+  enabled: true
+  className: nginx
+  host: devops.local
+  path: /
+  annotations: {}
