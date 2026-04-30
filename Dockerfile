@@ -9,13 +9,13 @@ COPY package*.json ./
 RUN npm ci --omit=dev --no-audit --no-fund \
   && npm cache clean --force
 
-COPY --chown=node:node app.js ./
+COPY --chown=1000:1000 app.js ./
 
-USER node
+USER 1000:1000
 
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:3000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-CMD ["npm", "start"]
+CMD ["node", "app.js"]
