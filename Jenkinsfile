@@ -14,6 +14,9 @@ pipeline {
     HELM_CHART = 'helm/devops-chart'
     K8S_SERVICE_NAME = 'devops-release-devops-chart'
     SMOKE_TEST_PORT = '18080'
+    GITHUB_REPO = 'github.com/Pramu55/devops-autoops-appdevops-autoops-app.git'
+    ARGOCD_APP = 'devops-autoops-app'
+
   }
 
   stages {
@@ -81,34 +84,51 @@ pipeline {
       }
     }
 
-    stage('Validate Helm Chart') {
+    stage('Update GitOps Image Tag') {
       steps {
-        sh '''
-          helm lint ${HELM_CHART}
-          helm template ${HELM_RELEASE} ${HELM_CHART} \
-            --set image.repository=${DOCKERHUB_CREDS_USR}/${IMAGE_NAME} \
-            --set image.tag=${IMAGE_TAG} > rendered-manifests.yaml
-        '''
+        withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_TOKEN')]) {
+          sh '''
+            set -e
+
+            sed -i "s|^  repository: .*|  repository: ${DOCKERHUB_CREDS_USR}/${IMAGE_NAME}|" ${HELM_CHART}/values.yaml
+            sed -i "s|^  tag: .*|  tag: '${IMAGE_TAG}'|" ${HELM_CHART}/values.yaml
+
+            helm lint ${HELM_CHART}
+            helm template ${HELM_RELEASE} ${HELM_CHART} > rendered-manifests.yaml
+
+            git config user.name "jenkins"
+            git config user.email "jenkins@local"
+
+            git add ${HELM_CHART}/values.yaml
+            git commit -m "Update image tag to ${IMAGE_TAG} [skip ci]" || echo "No Git changes to commit"
+            git push https://${GIT_USERNAME}:${GIT_TOKEN}@${GITHUB_REPO} HEAD:main
+          '''
+        }
       }
     }
 
-    stage('Deploy using Helm') {
+    stage('Verify ArgoCD Deployment') {
       steps {
         sh '''
-          helm upgrade --install ${HELM_RELEASE} ${HELM_CHART} \
-            --set image.repository=${DOCKERHUB_CREDS_USR}/${IMAGE_NAME} \
-            --set image.tag=${IMAGE_TAG} \
-            --atomic \
-            --wait \
-            --timeout 5m
-        '''
-      }
-    }
+          set -e
 
-    stage('Verify') {
-      steps {
-        sh '''
-          kubectl rollout status deployment/${K8S_SERVICE_NAME} --timeout=180s
+          NEW_COMMIT=$(git rev-parse HEAD)
+
+          for i in $(seq 1 60); do
+            SYNC=$(kubectl get application ${ARGOCD_APP} -n argocd -o jsonpath='{.status.sync.status}' || true)
+            HEALTH=$(kubectl get application ${ARGOCD_APP} -n argocd -o jsonpath='{.status.health.status}' || true)
+            REVISION=$(kubectl get application ${ARGOCD_APP} -n argocd -o jsonpath='{.status.sync.revision}' || true)
+
+            echo "ArgoCD status: sync=${SYNC}, health=${HEALTH}, revision=${REVISION}"
+
+            if [ "${SYNC}" = "Synced" ] && [ "${HEALTH}" = "Healthy" ] && [ "${REVISION}" = "${NEW_COMMIT}" ]; then
+              break
+            fi
+
+            sleep 5
+          done
+
+          kubectl rollout status deployment/${K8S_SERVICE_NAME} --timeout=300s
           kubectl get pods -l app.kubernetes.io/instance=${HELM_RELEASE}
           kubectl get svc ${K8S_SERVICE_NAME}
         '''
