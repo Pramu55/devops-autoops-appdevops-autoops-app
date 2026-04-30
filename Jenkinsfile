@@ -12,7 +12,7 @@ pipeline {
     IMAGE_TAG = "${BUILD_NUMBER}"
     HELM_RELEASE = 'devops-release'
     HELM_CHART = 'helm/devops-chart'
-    SERVICE_NAME = 'devops-release-devops-chart'
+    K8S_SERVICE_NAME = 'devops-release-devops-chart'
     SMOKE_TEST_PORT = '18080'
   }
 
@@ -108,9 +108,9 @@ pipeline {
     stage('Verify') {
       steps {
         sh '''
-          kubectl rollout status deployment/${SERVICE_NAME} --timeout=180s
+          kubectl rollout status deployment/${K8S_SERVICE_NAME} --timeout=180s
           kubectl get pods -l app.kubernetes.io/instance=${HELM_RELEASE}
-          kubectl get svc ${SERVICE_NAME}
+          kubectl get svc ${K8S_SERVICE_NAME}
         '''
       }
     }
@@ -119,7 +119,7 @@ pipeline {
       steps {
         sh '''
           set -e
-          kubectl port-forward svc/${SERVICE_NAME} ${SMOKE_TEST_PORT}:3000 > port-forward.log 2>&1 &
+          kubectl port-forward svc/${K8S_SERVICE_NAME} ${SMOKE_TEST_PORT}:3000 > port-forward.log 2>&1 &
           PF_PID=$!
           trap "kill ${PF_PID} || true" EXIT
           sleep 8
@@ -146,7 +146,7 @@ pipeline {
       sh '''
         echo "Pipeline failed. Last Kubernetes state:"
         kubectl get pods -l app.kubernetes.io/instance=${HELM_RELEASE} || true
-        kubectl describe deployment/${SERVICE_NAME} || true
+        kubectl describe deployment/${K8S_SERVICE_NAME} || true
       '''
     }
   }
