@@ -3,7 +3,6 @@ pipeline {
 
   options {
     skipDefaultCheckout(true)
-    timestamps()
     timeout(time: 30, unit: 'MINUTES')
   }
 
@@ -124,7 +123,12 @@ pipeline {
           PF_PID=$!
           trap "kill ${PF_PID} || true" EXIT
           sleep 8
-          SMOKE_TEST_URL=http://127.0.0.1:${SMOKE_TEST_PORT} npm run smoke
+
+          if ! SMOKE_TEST_URL=http://127.0.0.1:${SMOKE_TEST_PORT} npm run smoke; then
+            echo "Smoke test failed. Port-forward logs:"
+            cat port-forward.log || true
+            exit 1
+          fi
         '''
       }
     }
@@ -137,6 +141,7 @@ pipeline {
         rm -f rendered-manifests.yaml port-forward.log || true
       '''
     }
+
     failure {
       sh '''
         echo "Pipeline failed. Last Kubernetes state:"
