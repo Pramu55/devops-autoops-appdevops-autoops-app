@@ -67,3 +67,8 @@ pdb:
 
 networkPolicy:
   enabled: false
+
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  interval: 15s
