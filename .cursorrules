@@ -1,0 +1,60 @@
+# AutoOps Platform — Cursor Rules
+
+## Repository Layout
+This is a pnpm monorepo managed with Turborepo.
+
+```
+apps/api          Node.js/Express API  (TypeScript strict)
+apps/dashboard    Next.js dashboard    (TypeScript strict)
+apps/worker       Background worker    (TypeScript strict)
+packages/shared   Shared types/utils   (TypeScript strict)
+infra/docker      Docker & Jenkins configs
+infra/helm        Helm charts
+infra/k8s         Raw Kubernetes manifests
+infra/monitoring  Prometheus / Grafana configs
+infra/terraform   Terraform infrastructure-as-code
+```
+
+## TypeScript
+- Always use `strict: true` — no exceptions.
+- Prefer `unknown` over `any`; if `any` is unavoidable add a `// eslint-disable` comment explaining why.
+- Use explicit return types on exported functions.
+- Do not use barrel re-exports that create circular dependencies.
+
+## Code Style
+- Single quotes for strings in TypeScript/JavaScript.
+- No semicolons in new code (unless enforced by formatter config).
+- Trailing commas in multi-line structures.
+- Max line length: 100 characters.
+- File names: `kebab-case.ts` for modules, `PascalCase.tsx` for React components.
+
+## Imports
+- Use absolute workspace package imports (`@autoops/shared`) rather than deep relative paths.
+- Group imports: Node built-ins → external packages → internal workspace → relative.
+
+## Infrastructure
+- Never hard-code secrets — use environment variables or Kubernetes Secrets.
+- All Kubernetes manifests must include resource requests and limits.
+- Helm values overrides go in `values-dev.yaml` / `values-prod.yaml`.
+- Terraform resources must have meaningful `Name` tags.
+
+## Testing
+- Unit tests live next to their source in `test/` subdirectory of each app.
+- Smoke tests live in `scripts/smoke-test.ts` of each app.
+- Tests use the built-in `node:test` runner — do not add Jest unless explicitly required.
+
+## Docker
+- Use multi-stage builds: `builder` → production.
+- Never run as root inside containers; use `USER 1000:1000`.
+- Always include a `HEALTHCHECK` instruction.
+- Build context is the repo root (`docker build -f apps/<name>/Dockerfile .`).
+
+## CI/CD
+- Jenkins handles CI: build → test → image push.
+- ArgoCD handles CD: GitOps sync from `infra/helm/devops-chart`.
+- Do not modify `infra/helm/devops-chart` paths without updating `argocd-devops-app.yaml`.
+
+## Dependency Policy
+- Avoid adding dependencies that duplicate what Node.js stdlib provides.
+- Pin major versions in `package.json` using `^` caret ranges.
+- Run `pnpm audit` before adding any new package.

@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/Pramu55/devops-autoops-appdevops-autoops-app.git
     targetRevision: main
-    path: helm/devops-chart
+    path: infra/helm/devops-chart
     helm:
       releaseName: devops-release
   destination:

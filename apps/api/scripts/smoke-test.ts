@@ -1,17 +1,17 @@
-const http = require("node:http");
+import http from 'node:http';
 
-const targetUrl = process.env.SMOKE_TEST_URL || "http://127.0.0.1:3000";
-const expectedText = "DevOps AutoOps App is Running!";
+const targetUrl = process.env.SMOKE_TEST_URL ?? 'http://127.0.0.1:3000';
+const expectedText = 'DevOps AutoOps App is Running!';
 
 http
   .get(targetUrl, (res) => {
-    let body = "";
+    let body = '';
 
-    res.on("data", (chunk) => {
-      body += chunk;
+    res.on('data', (chunk: Buffer) => {
+      body += chunk.toString();
     });
 
-    res.on("end", () => {
+    res.on('end', () => {
       if (res.statusCode !== 200) {
         console.error(`Smoke test failed: expected HTTP 200, got ${res.statusCode}`);
         process.exit(1);
@@ -25,7 +25,7 @@ http
       console.log(`Smoke test passed for ${targetUrl}`);
     });
   })
-  .on("error", (error) => {
+  .on('error', (error: Error) => {
     console.error(`Smoke test failed: ${error.message}`);
     process.exit(1);
   });

@@ -1,175 +1,164 @@
-# DevOps AutoOps Platform
+# AutoOps Platform
 
-Production-style DevOps and cloud portfolio project for a containerized Node.js microservice.
+Production-grade monorepo for the AutoOps DevOps platform. Built with **pnpm workspaces** and **Turborepo**, written in **TypeScript strict mode**.
 
-This project demonstrates CI/CD automation, Docker image delivery, Helm-based Kubernetes deployment, health checks, observability hooks, autoscaling, and secure deployment defaults.
-
-## Service Endpoints
-
-| Endpoint | Purpose |
-| --- | --- |
-| `/` | Main application response |
-| `/health` | Liveness probe for Kubernetes |
-| `/ready` | Readiness probe for Kubernetes |
-| `/metrics` | Prometheus-compatible metrics |
-
-Expected root response:
+## Repository Layout
 
 ```text
-DevOps AutoOps App is Running!
+autoops-platform/
+├── apps/
+│   ├── api/            Express API — health, readiness, Prometheus metrics
+│   ├── dashboard/      Next.js operational visibility dashboard
+│   └── worker/         Background job processor foundation
+├── packages/
+│   └── shared/         Shared TypeScript types and utilities
+├── infra/
+│   ├── docker/         Docker and Jenkins configurations
+│   │   └── jenkins/    Custom Jenkins image + docker-compose
+│   ├── helm/           Helm chart for Kubernetes deployments
+│   │   └── devops-chart/
+│   ├── k8s/            Raw Kubernetes manifests (namespace, deploy, svc…)
+│   ├── monitoring/     Prometheus / Grafana configuration notes
+│   └── terraform/      AWS EKS infrastructure (Terraform)
+├── docs/               Architecture and pipeline documentation
+├── Jenkinsfile         CI pipeline (build → test → push → deploy)
+├── argocd-devops-app.yaml  ArgoCD GitOps application
+├── turbo.json          Turborepo task pipeline
+├── pnpm-workspace.yaml Workspace package globs
+└── tsconfig.base.json  Shared TypeScript compiler options
 ```
 
-## Local Commands
+## Prerequisites
 
-Install dependencies:
+| Tool        | Minimum version |
+|-------------|----------------|
+| Node.js     | 18             |
+| pnpm        | 9              |
+| Docker      | 20             |
+| kubectl     | 1.28           |
+| helm        | 3              |
+
+## Getting Started
 
 ```bash
-npm ci
+# Install all workspace dependencies
+pnpm install
+
+# Build all packages in dependency order
+pnpm build
+
+# Run all tests
+pnpm test
+
+# Start API in development mode (hot-reload)
+pnpm --filter @autoops/api dev
+
+# Start dashboard in development mode
+pnpm --filter @autoops/dashboard dev
 ```
 
-Run tests:
+## Applications
+
+### `apps/api`
+
+Express service serving:
+
+| Endpoint  | Purpose                          |
+|-----------|----------------------------------|
+| `GET /`   | Root — confirms service is live  |
+| `GET /health` | Liveness probe (Kubernetes) |
+| `GET /ready`  | Readiness probe (Kubernetes) |
+| `GET /metrics` | Prometheus text-format metrics |
 
 ```bash
-npm test
+# Run tests
+pnpm --filter @autoops/api test
+
+# Build TypeScript
+pnpm --filter @autoops/api build
+
+# Start production server
+pnpm --filter @autoops/api start
 ```
 
-Run locally:
+### `apps/dashboard`
+
+Next.js 15 operational dashboard (foundation). Displays service status and links to live API endpoints.
 
 ```bash
-npm start
+pnpm --filter @autoops/dashboard dev   # http://localhost:3001
+pnpm --filter @autoops/dashboard build
 ```
 
-Run smoke test:
+### `apps/worker`
 
-```bash
-SMOKE_TEST_URL=http://127.0.0.1:3000 npm run smoke
-```
+Background job processor. Currently a foundation — extend to connect to a queue (Redis, SQS, etc.) and implement job handlers.
 
 ## Docker
 
-Build image:
+The API Docker image is built from the **repo root** context:
 
 ```bash
-docker build -t <dockerhub-username>/devops-app:v1 .
+docker build -f apps/api/Dockerfile -t devops-app:local .
+docker run -p 3000:3000 devops-app:local
+curl http://localhost:3000/health
 ```
 
-Run container:
+## CI/CD
+
+### Jenkins (CI)
+
+Pipeline stages defined in `Jenkinsfile`:
+
+1. **Checkout** → clone repository
+2. **Install Dependencies** → `pnpm install --frozen-lockfile`
+3. **Typecheck** → `pnpm --filter @autoops/api typecheck`
+4. **Test** → `pnpm --filter @autoops/api test`
+5. **Build Docker Image** → `docker build -f apps/api/Dockerfile .`
+6. **Login to Docker Hub** → credential injection
+7. **Push Image** → Docker Hub
+8. **Deploy to Kubernetes** → `helm upgrade --install`
+9. **Verify Deployment** → `kubectl rollout status`
+10. **Smoke Test** → `curl /health` through port-forward
+
+Start Jenkins locally:
 
 ```bash
-docker run --rm -p 3000:3000 <dockerhub-username>/devops-app:v1
+cd infra/docker/jenkins
+docker-compose up -d
+# Jenkins available at http://localhost:8081
 ```
 
-## Kubernetes
+### ArgoCD (CD)
 
-Apply static manifests:
+GitOps application defined in `argocd-devops-app.yaml`. Watches `infra/helm/devops-chart` on the `main` branch and automatically syncs to the cluster.
+
+## Infrastructure
+
+### Kubernetes (raw manifests)
 
 ```bash
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f k8s/hpa.yaml
-kubectl apply -f k8s/pdb.yaml
+kubectl apply -f infra/k8s/namespace.yaml
+kubectl apply -f infra/k8s/
 ```
 
-Check status:
+### Helm
 
 ```bash
-kubectl get pods -n devops-autoops
-kubectl get svc -n devops-autoops
+helm upgrade --install devops-release infra/helm/devops-chart \
+  --values infra/helm/devops-chart/values-prod.yaml
 ```
 
-## Helm
+### Terraform
 
-Validate chart:
+AWS EKS provisioning — see `infra/terraform/aws-eks/README.md` for the roadmap.
 
-```bash
-helm lint helm/devops-chart
-helm template devops-release helm/devops-chart
-```
+## Monitoring
 
-Deploy chart:
+The API exposes Prometheus metrics at `/metrics`. A Prometheus Operator `ServiceMonitor` is included in the Helm chart (`serviceMonitor.enabled: true`).
 
-```bash
-helm upgrade --install devops-release helm/devops-chart \
-  --set image.repository=<dockerhub-username>/devops-app \
-  --set image.tag=v1 \
-  --atomic \
-  --wait \
-  --timeout 5m
-```
+See `infra/monitoring/README.md` for `scrape_configs` and PromQL examples.
 
-Open service with Minikube:
+## Architecture
 
-```bash
-minikube service devops-release-devops-chart
-```
-
-Port-forward:
-
-```bash
-kubectl port-forward svc/devops-release-devops-chart 8080:3000
-```
-
-## Jenkins CI/CD
-
-Jenkins pipeline stages:
-
-```text
-Clone Repo
-Install Dependencies
-Run Tests
-Build Docker Image
-Scan Docker Image
-Login to Docker Hub
-Push Image
-Validate Helm Chart
-Deploy using Helm
-Verify
-Smoke Test
-```
-
-Jenkins runs in Docker from:
-
-```text
-jenkins/docker-compose.yml
-```
-
-Required Jenkins credential:
-
-```text
-dockerhub-creds
-```
-
-## Security Notes
-
-Do not commit:
-
-```text
-node_modules/
-.env
-kubeconfig
-jenkins/jenkins-kube/
-```
-
-Use Jenkins credentials for Docker Hub authentication.
-
-## Project Strength
-
-This is no longer only a beginner CI/CD demo. It now includes:
-
-```text
-Health and readiness probes
-Prometheus metrics endpoint
-Automated tests
-Smoke testing
-Docker healthcheck
-Helm chart validation
-Atomic Helm deploys with rollback support
-Rolling updates
-Resource requests and limits
-Pod security context
-Horizontal Pod Autoscaler
-PodDisruptionBudget
-Prometheus scrape annotations
-```
+See [docs/architecture.md](docs/architecture.md) for the CI/CD flow and Kubernetes runtime topology.

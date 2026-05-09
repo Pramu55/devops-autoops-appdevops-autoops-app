@@ -1,11 +1,47 @@
+# Dependencies
 node_modules/
-npm-debug.log*
-.DS_Store
-.env
-.kube/
-kubeconfig
-jenkins_home/
-dist/
-coverage/
+**/node_modules/
 
-jenkins/jenkins-kube/
+# pnpm
+.pnpm-store/
+
+# Turborepo
+.turbo/
+**/.turbo/
+
+# TypeScript build output
+dist/
+**/dist/
+*.tsbuildinfo
+
+# Next.js
+apps/dashboard/.next/
+apps/dashboard/out/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Jenkins local kube config (gitignored by intent)
+infra/docker/jenkins/jenkins-kube/
+
+# Terraform state (never commit state files)
+infra/terraform/**/*.tfstate
+infra/terraform/**/*.tfstate.backup
+infra/terraform/**/.terraform/
+infra/terraform/**/*.tfvars

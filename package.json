@@ -1,15 +1,23 @@
 {
-  "name": "devops-autoops-app",
-  "version": "1.0.0",
-  "description": "DevOps AutoOps App with Docker, Jenkins, Kubernetes, and Helm",
-  "main": "app.js",
-  "scripts": {
-    "start": "node app.js",
-    "test": "node test/app.test.js",
-    "smoke": "node scripts/smoke-test.js"
+  "name": "autoops-platform",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AutoOps Platform — production-grade pnpm monorepo",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
   },
-  "license": "MIT",
-  "dependencies": {
-    "express": "^4.21.2"
+  "packageManager": "pnpm@10.33.3",
+  "scripts": {
+    "build": "turbo build",
+    "test": "turbo test",
+    "dev": "turbo dev",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "clean": "turbo clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2",
+    "typescript": "^5"
   }
 }

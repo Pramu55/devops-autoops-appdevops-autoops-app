@@ -1,15 +1,39 @@
-node_modules
-npm-debug.log
-.git
+# Dependencies (installed fresh in Docker build)
+node_modules/
+**/node_modules/
+
+# Turborepo cache
+.turbo/
+**/.turbo/
+
+# TypeScript build output (rebuilt in Docker)
+**/dist/
+*.tsbuildinfo
+
+# Next.js build artifacts
+apps/dashboard/.next/
+apps/dashboard/out/
+
+# Test files — not needed in production image
+apps/*/test/
+apps/*/scripts/
+
+# Documentation
+docs/
+*.md
+!apps/api/package.json
+
+# Infrastructure configs — not part of the app image
+infra/
+
+# Git metadata
+.git/
 .gitignore
-coverage
-.env
-.kube
-jenkins/jenkins-kube
-test
-scripts
-docs
-monitoring
-jenkins
-k8s
-helm
+
+# CI/CD files
+Jenkinsfile
+
+# Editor / OS
+.vscode/
+.DS_Store
+*.swp

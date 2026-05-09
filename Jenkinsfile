@@ -7,10 +7,10 @@ pipeline {
 
   environment {
     DOCKERHUB_CREDS = credentials('dockerhub-creds')
-    IMAGE_NAME = 'devops-app'
-    IMAGE_TAG = "${BUILD_NUMBER}"
-    HELM_RELEASE = 'devops-release'
-    HELM_CHART = 'helm/devops-chart'
+    IMAGE_NAME      = 'devops-app'
+    IMAGE_TAG       = "${BUILD_NUMBER}"
+    HELM_RELEASE    = 'devops-release'
+    HELM_CHART      = 'infra/helm/devops-chart'
     K8S_SERVICE_NAME = 'devops-release-devops-chart'
   }
 
@@ -22,10 +22,34 @@ pipeline {
       }
     }
 
+    stage('Install Dependencies') {
+      steps {
+        sh '''
+          corepack enable
+          pnpm install --frozen-lockfile
+        '''
+      }
+    }
+
+    stage('Typecheck') {
+      steps {
+        sh 'pnpm --filter @autoops/api typecheck'
+      }
+    }
+
+    stage('Test') {
+      steps {
+        sh 'pnpm --filter @autoops/api test'
+      }
+    }
+
     stage('Build Docker Image') {
       steps {
         sh '''
-          docker build -t ${DOCKERHUB_CREDS_USR}/${IMAGE_NAME}:${IMAGE_TAG} .
+          docker build \
+            -t ${DOCKERHUB_CREDS_USR}/${IMAGE_NAME}:${IMAGE_TAG} \
+            -f apps/api/Dockerfile \
+            .
         '''
       }
     }
